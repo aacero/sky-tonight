@@ -305,10 +305,10 @@ function render() {
     <!-- Top Navigation & Brand Header -->
     <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#30363d]">
       <div class="flex items-center gap-3">
-        <img src="./icon.svg" alt="Sky Tonight Logo" class="w-10 h-10 rounded-xl shadow-lg border border-[#30363d]" />
+        <img src="./icon.svg" alt="SkyOracle Logo" class="w-10 h-10 rounded-xl shadow-lg border border-[#30363d]" />
         <div>
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[#e6edf3] flex items-center gap-2">
-            The Sky Tonight
+            SkyOracle
             <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#58a6ff]/15 text-[#58a6ff] border border-[#58a6ff]/30">PWA</span>
           </h1>
           <p class="text-xs text-[#8b949e]">Stargazing forecast, ephemeris & planet guide</p>
@@ -547,7 +547,7 @@ function render() {
 
     <!-- Footer -->
     <footer class="pt-6 border-t border-[#30363d] flex flex-col sm:flex-row items-center justify-between text-xs text-[#8b949e] gap-2">
-      <div>The Sky Tonight · Offline NOAA/Meeus Astronomy + Open-Meteo Telemetry</div>
+      <div>SkyOracle · Offline NOAA/Meeus Astronomy + Open-Meteo Telemetry</div>
       <div class="flex items-center gap-3">
         <span>No API Keys Needed</span>
         <span>·</span>

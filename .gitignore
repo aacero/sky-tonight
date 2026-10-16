@@ -33,11 +33,11 @@ Thumbs.db
 # Android & Keystore files
 *.keystore
 *.jks
+*.aab
+*.apk
 android/app/build/
 android/.gradle/
 android/build/
-android/app-release-bundle.aab
-android/app-release-signed.apk
 android/store_icon.png
 android/manifest-checksum.txt
 android/gradlew*
