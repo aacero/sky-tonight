@@ -54,11 +54,11 @@ jobs:
 
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
             echo "Using existing keystore from repository secrets..."
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/android.keystore
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ./android.keystore
           else
             echo "Generating new release upload keystore..."
             keytool -genkey -v \
-              -keystore android/android.keystore \
+              -keystore ./android.keystore \
               -alias android \
               -keyalg RSA \
               -keysize 2048 \
@@ -68,8 +68,10 @@ jobs:
               -dname "CN=Sky Tonight, OU=Lapsed Academics, O=Lapsed Academics, L=Jacksonville, ST=Florida, C=US"
           fi
 
+          cp ./android.keystore android/android.keystore
+
           # Extract SHA-256 fingerprint for Digital Asset Links
-          SHA256_FP=$(keytool -list -v -keystore android/android.keystore -alias android -storepass "$KEY_PASS" | grep "SHA256:" | awk '{print $2}')
+          SHA256_FP=$(keytool -list -v -keystore ./android.keystore -alias android -storepass "$KEY_PASS" | grep "SHA256:" | awk '{print $2}')
           echo "SHA256_FINGERPRINT=$SHA256_FP" >> $GITHUB_ENV
 
           cat << EOF > BUILD_INFO.txt
@@ -111,14 +113,14 @@ jobs:
           export BUBBLEWRAP_KEYSTORE_PASSWORD="$KEY_PASS"
           export BUBBLEWRAP_KEY_PASSWORD="$KEY_PASS"
 
-          npx -y @bubblewrap/cli build --skipPwaValidation --manifest ./android/twa-manifest.json
+          npx -y @bubblewrap/cli build --skipPwaValidation --manifest ./android/twa-manifest.json --signingKeyPath ./android.keystore
 
       - name: Prepare Artifacts
         run: |
           mkdir -p output
-          cp android/app-release-bundle.aab output/ || true
-          cp android/app-release-signed.apk output/ || true
-          cp android/android.keystore output/upload-keystore.keystore || true
+          find . -name "*.aab" -exec cp {} output/ \;
+          find . -name "*release*.apk" -exec cp {} output/ \;
+          cp ./android.keystore output/upload-keystore.keystore || true
           cp BUILD_INFO.txt output/ || true
           ls -lh output/
 
