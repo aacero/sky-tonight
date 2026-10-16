@@ -548,10 +548,12 @@ function render() {
     <!-- Footer -->
     <footer class="pt-6 border-t border-[#30363d] flex flex-col sm:flex-row items-center justify-between text-xs text-[#8b949e] gap-2">
       <div>The Sky Tonight · Offline NOAA/Meeus Astronomy + Open-Meteo Telemetry</div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <span>No API Keys Needed</span>
         <span>·</span>
         <span>PWA Ready</span>
+        <span>·</span>
+        <a href="./privacy.html" target="_blank" class="hover:text-[#58a6ff] transition underline">Privacy Policy</a>
       </div>
     </footer>
 
