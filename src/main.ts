@@ -97,13 +97,169 @@ async function refreshAll() {
   }
 }
 
-function handleGeolocate() {
-  if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser.');
+// ── Realistic Moon Image Asset & Canvas Visualizer ──────────────────────────
+
+const moonImage = new Image();
+let moonImageLoaded = false;
+moonImage.src = './moon_photo.png';
+moonImage.onload = () => {
+  moonImageLoaded = true;
+  drawMoonCanvas();
+};
+if (moonImage.complete && moonImage.naturalWidth !== 0) {
+  moonImageLoaded = true;
+}
+
+function drawMoonCanvas() {
+  const canvas = document.getElementById('moonCanvas') as HTMLCanvasElement | null;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const width = canvas.width;
+  const height = canvas.height;
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.max(0, Math.min(width, height) / 2 - 6);
+
+  ctx.save();
+  ctx.clearRect(0, 0, width, height);
+  if (radius <= 0) {
+    ctx.restore();
     return;
   }
+
+  // Base circular clip for the whole moon disc
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Dark background disc
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+  // Unilluminated Earthshine layer: faint realistic moon photo
+  if (moonImageLoaded && moonImage.complete && moonImage.naturalWidth !== 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.drawImage(moonImage, cx - radius, cy - radius, radius * 2, radius * 2);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#161b22';
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  }
+
+  // Illuminated portion with Bezier terminator clipping
+  const cyclePos = state.moon ? state.moon.cyclePos : 0.25;
+  const phase = Math.max(0, Math.min(1, cyclePos));
+  const k = 1.333333; // 4/3 cubic Bezier constant for circle arc approximation
+
+  if (phase > 0.001 && phase < 0.999) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - radius);
+
+    if (phase <= 0.5) {
+      // Waxing (illuminated on right)
+      ctx.bezierCurveTo(
+        cx + k * radius, cy - radius,
+        cx + k * radius, cy + radius,
+        cx, cy + radius
+      );
+      const waxingTerminator = cx + k * radius * Math.cos(2 * Math.PI * phase);
+      ctx.bezierCurveTo(
+        waxingTerminator, cy + radius,
+        waxingTerminator, cy - radius,
+        cx, cy - radius
+      );
+    } else {
+      // Waning (illuminated on left)
+      ctx.bezierCurveTo(
+        cx - k * radius, cy - radius,
+        cx - k * radius, cy + radius,
+        cx, cy + radius
+      );
+      const waningTerminator = cx - k * radius * Math.cos(2 * Math.PI * phase);
+      ctx.bezierCurveTo(
+        waningTerminator, cy + radius,
+        waningTerminator, cy - radius,
+        cx, cy - radius
+      );
+    }
+
+    ctx.closePath();
+    ctx.clip();
+
+    // Draw full-brightness realistic photo in illuminated region
+    if (moonImageLoaded && moonImage.complete && moonImage.naturalWidth !== 0) {
+      ctx.drawImage(moonImage, cx - radius, cy - radius, radius * 2, radius * 2);
+    } else {
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+    }
+    ctx.restore();
+  }
+
+  ctx.restore(); // Restore base circular clip
+
+  // Subtle luminous rim / accent ring
+  ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+  ctx.lineWidth = Math.max(2, radius * 0.035);
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore(); // Restore initial canvas state
+}
+
+// ── Geolocation & IP Fallback ───────────────────────────────────────────────
+
+async function fetchIpLocation(): Promise<SavedLocation | null> {
+  try {
+    const res = await fetch('https://ipwho.is/');
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.success && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+      const place = [data.city, data.region_code || data.region, data.country_code || data.country]
+        .filter(Boolean)
+        .join(', ');
+      return {
+        place: place || 'My Location',
+        lat: Math.round(data.latitude * 10000) / 10000,
+        lon: Math.round(data.longitude * 10000) / 10000
+      };
+    }
+  } catch (err) {
+    console.warn('IP geolocation lookup failed:', err);
+  }
+  return null;
+}
+
+async function handleGeolocate() {
   state.loading = true;
   render();
+
+  const fallbackToIp = async () => {
+    const ipLoc = await fetchIpLocation();
+    if (ipLoc) {
+      state.location = ipLoc;
+      saveLocation(ipLoc);
+      await refreshAll();
+      return true;
+    }
+    return false;
+  };
+
+  if (!navigator.geolocation) {
+    const ok = await fallbackToIp();
+    if (!ok) {
+      state.loading = false;
+      alert('Unable to determine location automatically. Please search for your city above.');
+      render();
+    }
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
@@ -118,56 +274,17 @@ function handleGeolocate() {
       saveLocation(newLoc);
       await refreshAll();
     },
-    (err) => {
-      state.loading = false;
-      alert(`Location access denied: ${err.message}`);
-      render();
+    async (err) => {
+      console.warn('Browser geolocation failed, attempting IP fallback:', err.message);
+      const ok = await fallbackToIp();
+      if (!ok) {
+        state.loading = false;
+        alert(`Location access failed: ${err.message}. Please search for your city above.`);
+        render();
+      }
     },
-    { timeout: 10000, enableHighAccuracy: true }
+    { timeout: 7000, enableHighAccuracy: true }
   );
-}
-
-// ── SVG Moon Visualizer ─────────────────────────────────────────────────────
-
-function renderMoonDisc(illum: number, cyclePos: number): string {
-  // Simple realistic SVG lunar representation
-  const isWaxing = cyclePos < 0.5;
-  const k = illum / 100; // 0 to 1
-  const r = 40;
-
-  // Outer shadow disk
-  return `
-    <svg viewBox="0 0 100 100" class="w-20 h-20 drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]">
-      <defs>
-        <radialGradient id="moonTexture" cx="40%" cy="40%" r="60%">
-          <stop offset="0%" stop-color="#fef3c7" />
-          <stop offset="70%" stop-color="#fde047" />
-          <stop offset="100%" stop-color="#d97706" />
-        </radialGradient>
-      </defs>
-      <!-- Dark moon base -->
-      <circle cx="50" cy="50" r="${r}" fill="#1c222b" stroke="#30363d" stroke-width="2" />
-      <!-- Illuminated portion -->
-      <path d="${getMoonPath(r, k, isWaxing)}" fill="url(#moonTexture)" />
-    </svg>
-  `;
-}
-
-function getMoonPath(r: number, k: number, isWaxing: boolean): string {
-  if (k <= 0.02) return '';
-  if (k >= 0.98) return `M 50 ${50 - r} A ${r} ${r} 0 1 1 50 ${50 + r} A ${r} ${r} 0 1 1 50 ${50 - r} Z`;
-
-  // Elliptical terminator approximation
-  const rx = Math.abs(r * (2 * k - 1));
-  const sweep = k > 0.5 ? 1 : 0;
-
-  if (isWaxing) {
-    // Right side illuminated
-    return `M 50 ${50 - r} A ${r} ${r} 0 0 1 50 ${50 + r} A ${rx} ${r} 0 0 ${sweep} 50 ${50 - r} Z`;
-  } else {
-    // Left side illuminated
-    return `M 50 ${50 - r} A ${r} ${r} 0 0 0 50 ${50 + r} A ${rx} ${r} 0 0 ${sweep ? 0 : 1} 50 ${50 - r} Z`;
-  }
 }
 
 // ── UI Rendering ────────────────────────────────────────────────────────────
@@ -373,7 +490,7 @@ function render() {
 
             <div class="flex items-center justify-between gap-4">
               <div class="flex items-center gap-4">
-                ${state.moon ? renderMoonDisc(state.moon.illum, state.moon.cyclePos) : ''}
+                <canvas id="moonCanvas" width="180" height="180" class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 drop-shadow-[0_0_14px_rgba(251,191,36,0.3)]"></canvas>
                 <div>
                   <h4 class="text-lg font-bold text-[#e6edf3]">${state.moon?.name || 'Waxing Moon'}</h4>
                   <p class="text-xs text-[#8b949e] mt-0.5">
@@ -443,6 +560,7 @@ function render() {
   `;
 
   attachEventHandlers();
+  drawMoonCanvas();
 }
 
 function renderSearchModal(): string {
