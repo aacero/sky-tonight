@@ -29,3 +29,20 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Android & Keystore files
+*.keystore
+*.jks
+android/app/build/
+android/.gradle/
+android/build/
+android/app-release-bundle.aab
+android/app-release-signed.apk
+android/store_icon.png
+android/manifest-checksum.txt
+android/gradlew*
+android/gradle/
+android/gradle.properties
+android/settings.gradle
+android/build.gradle
+android/app/
