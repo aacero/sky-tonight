@@ -29,6 +29,12 @@ jobs:
 
       - name: Setup Bubblewrap Environment Paths
         run: |
+          # Bubblewrap checks for $ANDROID_HOME/tools or $ANDROID_HOME/bin
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest" ] && [ ! -e "$ANDROID_HOME/tools" ]; then
+            echo "Creating symlink $ANDROID_HOME/tools -> $ANDROID_HOME/cmdline-tools/latest"
+            sudo ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
+          fi
+
           mkdir -p ~/.bubblewrap
           cat << EOF > ~/.bubblewrap/config.json
           {
