@@ -1,6 +1,6 @@
-# The Sky Tonight (PWA) 🔭✨
+# SkyOracle: Stargazing Forecast & Ephemeris 🔭✨
 
-A fast, lightweight, standalone Progressive Web App (PWA) for stargazers, astronomers, and night-sky enthusiasts.
+A fast, lightweight, standalone Progressive Web App (PWA) and Android app for stargazers, astronomers, and night-sky enthusiasts.
 
 Provides dynamic dark-sky observing forecasts, NOAA/Meeus solar twilight timelines, Meeus lunar phases, and NASA JPL naked-eye planetary ephemeris with IAU constellation tracking.
 
