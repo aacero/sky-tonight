@@ -1,8 +1,8 @@
 {
   "packageId": "com.lapsedacademics.skytonight",
   "host": "aacero.github.io",
-  "name": "The Sky Tonight",
-  "launcherName": "Sky Tonight",
+  "name": "SkyOracle: Stargazing Forecast",
+  "launcherName": "SkyOracle",
   "display": "standalone",
   "themeColor": "#0d1117",
   "themeColorDark": "#0d1117",
@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionCode": 1,
-  "appVersion": "1.0.0",
+  "appVersionCode": 2,
+  "appVersion": "1.0.1",
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://aacero.github.io/sky-tonight/manifest.json",
   "fallbackType": "customtabs",
