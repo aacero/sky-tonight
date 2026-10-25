@@ -6,13 +6,13 @@ Provides dynamic dark-sky observing forecasts, NOAA/Meeus solar twilight timelin
 
 <div align="center">
 
-[![Add to Obtainium](https://raw.githubusercontent.com/ImranR98/apps.obtainium.imranr.dev/main/assets/graphics/badge_obtainium.png)](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.lapsedacademics.skytonight%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Faacero%2Fsky-tonight%22%2C%22author%22%3A%22aacero%22%2C%22name%22%3A%22SkyOracle%22%7D)
-[![Download APK](https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android&logoColor=white)](https://github.com/aacero/sky-tonight/releases/latest)
+[![Add to Obtainium](https://raw.githubusercontent.com/ImranR98/apps.obtainium.imranr.dev/main/assets/graphics/badge_obtainium.png)](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.lapsedacademics.skytonight%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Faacero%2Fsky-oracle%22%2C%22author%22%3A%22aacero%22%2C%22name%22%3A%22SkyOracle%22%7D)
+[![Download APK](https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android&logoColor=white)](https://github.com/aacero/sky-oracle/releases/latest)
 [![Launch Web App](https://img.shields.io/badge/Web_PWA-Launch-blueviolet?style=for-the-badge&logo=pwa&logoColor=white)](https://aacero.github.io/sky-tonight/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/github/v/release/aacero/sky-tonight)](https://github.com/aacero/sky-tonight/releases)
-[![Komi Store](https://img.shields.io/badge/Komi_Store-Auto--Indexed-blue?logo=github&logoColor=white)](https://github.com/aacero/sky-tonight/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/aacero/sky-oracle)](https://github.com/aacero/sky-oracle/releases)
+[![Komi Store](https://img.shields.io/badge/Komi_Store-Auto--Indexed-blue?logo=github&logoColor=white)](https://github.com/aacero/sky-oracle/releases)
 
 </div>
 
@@ -22,15 +22,15 @@ Provides dynamic dark-sky observing forecasts, NOAA/Meeus solar twilight timelin
 
 ### 1. Obtainium (Recommended for FOSS & Auto-Updates)
 If you use [Obtainium](https://github.com/ImranR98/Obtainium) on Android:
-- **1-Tap Add**: Tap the **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.lapsedacademics.skytonight%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Faacero%2Fsky-tonight%22%2C%22author%22%3A%22aacero%22%2C%22name%22%3A%22SkyOracle%22%7D)** badge above on your Android phone or tablet.
-- **Manual Add**: In Obtainium, tap **Add App**, paste `https://github.com/aacero/sky-tonight`, and tap **Add**. Obtainium will automatically track releases and notify you of updates.
+- **1-Tap Add**: Tap the **[Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.lapsedacademics.skytonight%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Faacero%2Fsky-oracle%22%2C%22author%22%3A%22aacero%22%2C%22name%22%3A%22SkyOracle%22%7D)** badge above on your Android phone or tablet.
+- **Manual Add**: In Obtainium, tap **Add App**, paste `https://github.com/aacero/sky-oracle`, and tap **Add**. Obtainium will automatically track releases and notify you of updates.
 
 ### 2. Komi Store
 Komi Store automatically indexes SkyOracle releases directly from GitHub. Search for **SkyOracle** inside the Komi Store app to install and receive silent/assisted auto-updates.
 
 ### 3. Direct APK Sideload
-Download the latest signed APK directly from our **[Releases](https://github.com/aacero/sky-tonight/releases/latest)** page:
-- **Latest Build**: [`SkyOracle-v1.0.1.apk`](https://github.com/aacero/sky-tonight/releases/download/v1.0.1/SkyOracle-v1.0.1.apk) (SHA-256: `07f57905e43a48a6f6e8119aa998c46d6007f41a386ec03e3d3028b83dda6521`)
+Download the latest signed APK directly from our **[Releases](https://github.com/aacero/sky-oracle/releases/latest)** page:
+- **Latest Build**: [`SkyOracle-v1.0.1.apk`](https://github.com/aacero/sky-oracle/releases/download/v1.0.1/SkyOracle-v1.0.1.apk) (SHA-256: `07f57905e43a48a6f6e8119aa998c46d6007f41a386ec03e3d3028b83dda6521`)
 
 ### 4. Progressive Web App (PWA)
 Open **[aacero.github.io/sky-tonight/](https://aacero.github.io/sky-tonight/)** in any modern mobile or desktop browser (Chrome, Firefox, Safari, Edge) and tap **"Install"** or **"Add to Home Screen"**.
@@ -45,7 +45,7 @@ Open **[aacero.github.io/sky-tonight/](https://aacero.github.io/sky-tonight/)** 
 - **100% Offline Astronomical Ephemeris**:
   - **Solar Twilights**: Exact times for Sunset (-0.8°), Civil Dusk (-6°), Nautical Dusk (-12°), Astronomical Dusk (-18°), Astronomical Dawn (-18°), and Sunrise (-0.8°).
   - **Moon Phase & Illumination**: Exact geocentric lunar age in days, illuminated percentage, synodic phase name, and SVG lunar terminator visualizer.
-  - **Naked-Eye Planets & 10° Starfields**: Local rise and set times, viewing conditions, and host astronomical constellation positions for Mercury, Venus, Mars, Jupiter, and Saturn. Tap any planet to reveal an interactive 10° × 10° telescopic/binocular starfield with real Hipparcos stars down to 6th magnitude colored by spectral type, labeled navigational stars, and a 1° Telrad-style reticle.
+  - **Naked-Eye Planets & 10° Starfields**: Local rise and set times, viewing conditions, and host astronomical constellation positions for Mercury, Venus, Mars, Jupiter, and Saturn. Tap any planet to reveal an interactive 10° × 10° telescopic/binocular starfield with real Hipparcos stars down to 6th magnitude colored by spectral type, labeled navigational stars, a 1° Telrad-style reticle, Southern hemisphere South-Up toggle (auto-configured for $\text{lat} < 0$), real-time astronomical horizon rendering, and below-horizon star dimming.
 - **Open Cloud Telemetry**: Fetches hourly cloud and temperature forecasts from Open-Meteo's open, keyless, CORS-enabled REST API.
 - **1-Tap Location & Geocoding**:
   - Browser GPS coordinate detection via `navigator.geolocation`.
@@ -139,4 +139,4 @@ This generates a signed Android `.apk` / `.aab` ready for sideloading or publish
 
 ## License
 
-Dual MIT / Apache-2.0.
+MIT License. See [LICENSE](LICENSE) for details.
