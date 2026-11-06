@@ -26,6 +26,7 @@ import {
   loadRecents,
   loadTempUnit,
   saveTempUnit,
+  escapeHtml,
   SavedLocation
 } from './core/storage.ts';
 
@@ -65,6 +66,20 @@ import {
 
 export const APP_VERSION = '1.0.21';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+interface WebkitFullscreenDocument extends Document {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+}
+
+interface WebkitFullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+}
+
 // ── Application State ───────────────────────────────────────────────────────
 
 interface AppState {
@@ -91,7 +106,7 @@ interface AppState {
   searchQuery: string;
   searchResults: GeocodingResult[];
   searchLoading: boolean;
-  installPrompt: any | null;
+  installPrompt: BeforeInstallPromptEvent | null;
   tourModalOpen: boolean;
   tourSlideIndex: number;
 }
@@ -130,7 +145,7 @@ const state: AppState = {
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
-  state.installPrompt = e;
+  state.installPrompt = e as BeforeInstallPromptEvent;
   render();
 });
 
@@ -165,9 +180,9 @@ async function refreshAll() {
 
     // 2. Fetch cloud cover telemetry from Open-Meteo
     state.forecast = await fetchCloudForecast(state.location.lat, state.location.lon, state.currentDate);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Forecast fetch failed:', err);
-    state.error = err.message || 'Forecast unavailable';
+    state.error = err instanceof Error ? err.message : 'Forecast unavailable';
   } finally {
     state.loading = false;
     render();
@@ -529,6 +544,7 @@ async function fetchIpLocation(): Promise<SavedLocation | null> {
 
 async function handleGeolocate() {
   state.loading = true;
+  state.error = null;
   render();
 
   const fallbackToIp = async () => {
@@ -546,7 +562,7 @@ async function handleGeolocate() {
     const ok = await fallbackToIp();
     if (!ok) {
       state.loading = false;
-      alert('Unable to determine location automatically. Please search for your city above.');
+      state.error = 'Unable to determine location automatically. Please search for your city above.';
       render();
     }
     return;
@@ -570,7 +586,7 @@ async function handleGeolocate() {
       const ok = await fallbackToIp();
       if (!ok) {
         state.loading = false;
-        alert(`Location access failed: ${err.message}. Please search for your city above.`);
+        state.error = `Location access failed: ${err.message}. Please search for your city above.`;
         render();
       }
     },
@@ -736,7 +752,7 @@ function render() {
         <div class="flex items-center gap-1.5 min-w-0">
           <button id="btnOpenSearch" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-xs sm:text-sm font-medium transition cursor-pointer min-w-0 flex-1 xs:flex-initial">
             <span class="text-[#58a6ff] shrink-0">📍</span>
-            <span class="text-[#e6edf3] truncate max-w-[120px] sm:max-w-[140px] md:max-w-[170px] lg:max-w-[220px]">${state.location.place}</span>
+            <span class="text-[#e6edf3] truncate max-w-[120px] sm:max-w-[140px] md:max-w-[170px] lg:max-w-[220px]">${escapeHtml(state.location.place)}</span>
             <span class="text-[11px] sm:text-xs text-[#8b949e] font-mono shrink-0 hidden xl:inline">(${state.location.lat.toFixed(2)}°, ${state.location.lon.toFixed(2)}°)</span>
           </button>
 
@@ -784,6 +800,18 @@ function render() {
         </div>
       </div>
     </header>
+
+    ${state.error ? `
+      <div role="alert" class="mt-4 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-200 text-xs sm:text-sm flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="shrink-0">⚠️</span>
+          <span class="truncate">${escapeHtml(state.error)}</span>
+        </div>
+        <button id="btnDismissError" type="button" class="p-1 rounded-lg text-amber-300 hover:text-white hover:bg-amber-500/20 transition cursor-pointer shrink-0" aria-label="${t('modal.close')}" title="${t('modal.close')}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    ` : ''}
 
     <!-- Main Content -->
     <main class="flex-1 py-6 flex flex-col gap-6">
@@ -1395,21 +1423,25 @@ function renderSearchResultsList(results: GeocodingResult[]): string {
   return `
     <div class="flex flex-col gap-1 max-h-56 overflow-y-auto">
       <span class="text-[11px] font-bold uppercase tracking-wider text-[#8b949e] px-1">${t('search.results')}</span>
-      ${results.map(r => `
+      ${results.map(r => {
+        const fullPlace = `${r.name}${r.admin1 ? `, ${r.admin1}` : ''}${r.country ? `, ${r.country}` : ''}`;
+        const subLabel = [r.admin1, r.country].filter(Boolean).join(', ');
+        return `
         <button
           type="button"
           class="btnSelectCity flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.05] text-left transition cursor-pointer"
-          data-place="${r.name}${r.admin1 ? `, ${r.admin1}` : ''}${r.country ? `, ${r.country}` : ''}"
+          data-place="${escapeHtml(fullPlace)}"
           data-lat="${r.latitude}"
           data-lon="${r.longitude}"
         >
           <div>
-            <div class="text-sm font-semibold text-[#e6edf3]">${r.name}</div>
-            <div class="text-xs text-[#8b949e]">${[r.admin1, r.country].filter(Boolean).join(', ')}</div>
+            <div class="text-sm font-semibold text-[#e6edf3]">${escapeHtml(r.name)}</div>
+            <div class="text-xs text-[#8b949e]">${escapeHtml(subLabel)}</div>
           </div>
           <div class="text-xs font-mono text-[#58a6ff]">${r.latitude.toFixed(2)}°, ${r.longitude.toFixed(2)}°</div>
         </button>
-      `).join('')}
+      `;
+      }).join('')}
     </div>
   `;
 }
@@ -1600,7 +1632,7 @@ function renderSearchModal(): string {
             id="inputCitySearch"
             type="text"
             placeholder="${t('search.placeholder')}"
-            value="${state.searchQuery}"
+            value="${escapeHtml(state.searchQuery)}"
             class="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#30363d] text-sm text-[#e6edf3] placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] transition"
             autocomplete="off"
             autocorrect="off"
@@ -1623,11 +1655,11 @@ function renderSearchModal(): string {
               <button
                 type="button"
                 class="btnSelectCity px-3 py-1.5 rounded-lg bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-medium text-[#e6edf3] transition cursor-pointer"
-                data-place="${r.place}"
+                data-place="${escapeHtml(r.place)}"
                 data-lat="${r.lat}"
                 data-lon="${r.lon}"
               >
-                ${r.place}
+                ${escapeHtml(r.place)}
               </button>
             `).join('')}
           </div>
@@ -2290,6 +2322,12 @@ function attachEventHandlers() {
     setLocale(selectLang.value as Locale);
   });
 
+  // Dismiss inline error notification
+  document.getElementById('btnDismissError')?.addEventListener('click', () => {
+    state.error = null;
+    render();
+  });
+
   // Geolocate
   document.getElementById('btnGeolocate')?.addEventListener('click', () => {
     handleGeolocate();
@@ -2310,17 +2348,19 @@ function attachEventHandlers() {
   // Toggle Fullscreen
   document.getElementById('btnToggleFullscreen')?.addEventListener('click', async () => {
     try {
-      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        } else if ((document.documentElement as any).webkitRequestFullscreen) {
-          await (document.documentElement as any).webkitRequestFullscreen();
+      const doc = document as WebkitFullscreenDocument;
+      const docEl = document.documentElement as WebkitFullscreenElement;
+      if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          await docEl.webkitRequestFullscreen();
         }
       } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen();
         }
       }
     } catch (err) {
@@ -2331,7 +2371,7 @@ function attachEventHandlers() {
   // Install PWA
   document.getElementById('btnInstallPwa')?.addEventListener('click', async () => {
     if (state.installPrompt) {
-      state.installPrompt.prompt();
+      await state.installPrompt.prompt();
       const outcome = await state.installPrompt.userChoice;
       if (outcome.outcome === 'accepted') {
         state.installPrompt = null;
@@ -2341,13 +2381,13 @@ function attachEventHandlers() {
   });
 
   // City Search Input
-  let debounceTimer: any = null;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   const inputSearch = document.getElementById('inputCitySearch') as HTMLInputElement | null;
   if (inputSearch) {
     inputSearch.addEventListener('input', (e) => {
       const val = (e.target as HTMLInputElement).value;
       state.searchQuery = val;
-      clearTimeout(debounceTimer);
+      if (debounceTimer) clearTimeout(debounceTimer);
       const spinner = document.getElementById('searchLoadingSpinner');
       const resultsContainer = document.getElementById('searchResultsContainer');
 
