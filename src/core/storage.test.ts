@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -109,10 +109,18 @@ describe('Storage, HTML Escaping & Hygiene Invariants', () => {
     it('contains no blocking alert() calls or untyped any in production source files', () => {
       const mainSrc = readFileSync(resolve(ROOT_DIR, 'src/main.ts'), 'utf8');
       const weatherSrc = readFileSync(resolve(ROOT_DIR, 'src/core/weather.ts'), 'utf8');
+      const uiDir = resolve(ROOT_DIR, 'src/ui');
+      const uiFiles = readdirSync(uiDir).filter(f => f.endsWith('.ts'));
 
       expect(mainSrc).not.toMatch(/\balert\s*\(/);
       expect(mainSrc).not.toMatch(/:\s*any\b|\bas\s+any\b/);
       expect(weatherSrc).not.toMatch(/:\s*any\b|\bas\s+any\b/);
+
+      for (const file of uiFiles) {
+        const content = readFileSync(resolve(uiDir, file), 'utf8');
+        expect(content, `Unexpected alert() in src/ui/${file}`).not.toMatch(/\balert\s*\(/);
+        expect(content, `Unexpected any in src/ui/${file}`).not.toMatch(/:\s*any\b|\bas\s+any\b/);
+      }
     });
   });
 });

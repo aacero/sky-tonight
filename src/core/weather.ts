@@ -53,6 +53,8 @@ export interface BestObservingWindow {
   label: string;
 }
 
+export type VerdictCode = 'clear' | 'partly_cloudy' | 'mostly_cloudy' | 'overcast';
+
 export interface ObservingForecast {
   hourlyWindow: ObservingHour[];
   avgCloud: number;
@@ -71,6 +73,7 @@ export interface ObservingForecast {
   dewRiskLabel: string;
   windSpeedMph: number;
   windSpeedKmh: number;
+  verdictCode: VerdictCode;
   verdict: string;
   verdictEmoji: string;
   verdictAccent: string;
@@ -561,23 +564,28 @@ export function parseCloudPayload(
   };
 
   const avgCloud = Math.round(sum / (win.length || 1));
+  let verdictCode: VerdictCode = 'clear';
   let verdict = "Clear — great for observing";
   let verdictEmoji = "🌟";
   let verdictAccent = "#3fb950"; // Green / Success
 
   if (avgCloud <= 25) {
+    verdictCode = 'clear';
     verdict = "Clear — great for observing";
     verdictEmoji = "🌟";
     verdictAccent = "#3fb950";
   } else if (avgCloud <= 55) {
+    verdictCode = 'partly_cloudy';
     verdict = "Partly cloudy — gaps to peek through";
     verdictEmoji = "⛅";
     verdictAccent = "#58a6ff"; // Blue
   } else if (avgCloud <= 80) {
+    verdictCode = 'mostly_cloudy';
     verdict = "Mostly cloudy — limited windows";
     verdictEmoji = "🌥️";
     verdictAccent = "#d29922"; // Yellow/Gold
   } else {
+    verdictCode = 'overcast';
     verdict = "Overcast — skywatching unlikely";
     verdictEmoji = "☁️";
     verdictAccent = "#f85149"; // Red
@@ -608,6 +616,7 @@ export function parseCloudPayload(
     dewRiskLabel,
     windSpeedMph: currentHour.windSpeedMph,
     windSpeedKmh: currentHour.windSpeedKmh,
+    verdictCode,
     verdict,
     verdictEmoji,
     verdictAccent,
