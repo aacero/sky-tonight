@@ -422,21 +422,44 @@ function updateStarfieldLiveScrub() {
 async function fetchIpLocation(): Promise<SavedLocation | null> {
   try {
     const res = await fetch('https://ipwho.is/');
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.success && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
-      const place = [data.city, data.region_code || data.region, data.country_code || data.country]
-        .filter(Boolean)
-        .join(', ');
-      return {
-        place: place || 'My Location',
-        lat: Math.round(data.latitude * 10000) / 10000,
-        lon: Math.round(data.longitude * 10000) / 10000
-      };
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+        const place = [data.city, data.region_code || data.region, data.country_code || data.country]
+          .filter(Boolean)
+          .join(', ');
+        return {
+          place: place || 'My Location',
+          lat: Math.round(data.latitude * 10000) / 10000,
+          lon: Math.round(data.longitude * 10000) / 10000
+        };
+      }
     }
   } catch (err) {
     console.warn('IP geolocation lookup failed:', err);
   }
+
+  try {
+    const res2 = await fetch('https://get.geojs.io/v1/ip/geo.json');
+    if (res2.ok) {
+      const data2 = await res2.json();
+      const lat = parseFloat(data2.latitude);
+      const lon = parseFloat(data2.longitude);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        const place = [data2.city, data2.region, data2.country_code]
+          .filter(Boolean)
+          .join(', ');
+        return {
+          place: place || 'My Location',
+          lat: Math.round(lat * 10000) / 10000,
+          lon: Math.round(lon * 10000) / 10000
+        };
+      }
+    }
+  } catch (err2) {
+    console.warn('Secondary IP geolocation lookup failed:', err2);
+  }
+
   return null;
 }
 
