@@ -36,14 +36,14 @@ if (fs.existsSync(manifestPath)) {
   // Use opaque NoActionBar theme and prevent WebView reload on orientation change
   xml = xml.replace(
     /android:theme="@style\/Theme\.LauncherActivity"/g,
-    'android:theme="@android:style/Theme.DeviceDefault.NoActionBar" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"'
+    'android:theme="@android:style/Theme.DeviceDefault.NoActionBar" android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"'
   );
 
   fs.writeFileSync(manifestPath, xml);
   console.log("Updated AndroidManifest.xml for native in-process WebView activity.");
 }
 
-// 2. Replace LauncherActivity.java with in-process WebView host (100% foreground UsageStats attribution + offline asset fallback)
+// 2. Replace LauncherActivity.java with in-process WebView host (100% foreground UsageStats attribution + offline asset fallback + native immersive fullscreen)
 const pkgPath = pkgId.replace(/\./g, "/");
 const launcherPath = path.resolve(process.cwd(), `app/src/main/java/${pkgPath}/LauncherActivity.java`);
 
@@ -60,10 +60,12 @@ import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -84,8 +86,23 @@ public class LauncherActivity extends Activity {
     private static final String APP_URL = "https://" + APP_HOST + START_PATH;
     private static final int BG_COLOR = Color.parseColor("#0d1117");
 
+    private FrameLayout rootLayout;
     private WebView webView;
     private volatile boolean useBundledAssets = false;
+    private volatile boolean immersiveFullscreen = false;
+    private WebChromeClient.CustomViewCallback customViewCallback;
+
+    public class AndroidBridge {
+        @JavascriptInterface
+        public void setFullscreen(boolean enable) {
+            runOnUiThread(() -> setImmersiveFullscreen(enable));
+        }
+
+        @JavascriptInterface
+        public boolean isFullscreen() {
+            return immersiveFullscreen;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,7 +110,7 @@ public class LauncherActivity extends Activity {
 
         getWindow().getDecorView().setBackgroundColor(BG_COLOR);
 
-        FrameLayout rootLayout = new FrameLayout(this);
+        rootLayout = new FrameLayout(this);
         rootLayout.setBackgroundColor(BG_COLOR);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -107,10 +124,15 @@ public class LauncherActivity extends Activity {
                 );
             }
             rootLayout.setOnApplyWindowInsetsListener((v, insets) -> {
-                Insets bars = insets.getInsets(
-                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
-                );
-                v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                if (immersiveFullscreen) {
+                    Insets cutout = insets.getInsets(WindowInsets.Type.displayCutout());
+                    v.setPadding(cutout.left, cutout.top, cutout.right, cutout.bottom);
+                } else {
+                    Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
+                    );
+                    v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                }
                 return WindowInsets.CONSUMED;
             });
         }
@@ -129,6 +151,8 @@ public class LauncherActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
 
+        webView.addJavascriptInterface(new AndroidBridge(), "SkyOracleAndroid");
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onGeolocationPermissionsShowPrompt(
@@ -137,6 +161,24 @@ public class LauncherActivity extends Activity {
             ) {
                 // Immediately trigger the app fast IP geolocation fallback without hanging
                 callback.invoke(origin, false, false);
+            }
+
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                }
+                customViewCallback = callback;
+                setImmersiveFullscreen(true);
+            }
+
+            @Override
+            public void onHideCustomView() {
+                setImmersiveFullscreen(false);
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                    customViewCallback = null;
+                }
             }
         });
 
@@ -206,6 +248,40 @@ public class LauncherActivity extends Activity {
         webView.loadUrl(APP_URL);
     }
 
+    private void setImmersiveFullscreen(boolean enable) {
+        immersiveFullscreen = enable;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                if (enable) {
+                    controller.setSystemBarsBehavior(
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    );
+                    controller.hide(WindowInsets.Type.systemBars());
+                } else {
+                    controller.show(WindowInsets.Type.systemBars());
+                }
+            }
+            if (rootLayout != null) {
+                rootLayout.requestApplyInsets();
+            }
+        } else {
+            View decorView = getWindow().getDecorView();
+            if (enable) {
+                decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                );
+            } else {
+                decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            }
+        }
+    }
+
     private boolean isNetworkAvailable() {
         try {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -264,6 +340,14 @@ public class LauncherActivity extends Activity {
                 "})()",
                 result -> {
                     if (result != null && result.contains("closed")) {
+                        return;
+                    }
+                    if (immersiveFullscreen) {
+                        setImmersiveFullscreen(false);
+                        webView.evaluateJavascript(
+                            "if(document.fullscreenElement){document.exitFullscreen();}else if(document.getElementById('btnToggleFullscreen')){document.getElementById('btnToggleFullscreen').click();}",
+                            null
+                        );
                         return;
                     }
                     if (webView.canGoBack()) {

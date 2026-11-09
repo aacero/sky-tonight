@@ -92,6 +92,17 @@ interface WebkitFullscreenElement extends HTMLElement {
   webkitRequestFullscreen?: () => Promise<void> | void;
 }
 
+interface SkyOracleAndroidBridge {
+  setFullscreen: (enable: boolean) => void;
+  isFullscreen?: () => boolean;
+}
+
+declare global {
+  interface Window {
+    SkyOracleAndroid?: SkyOracleAndroidBridge;
+  }
+}
+
 // ── Application State ───────────────────────────────────────────────────────
 
 interface AppState {
@@ -122,6 +133,7 @@ interface AppState {
   tourModalOpen: boolean;
   tourSlideIndex: number;
   cardOrder: DraggableCardId[];
+  nativeFullscreen: boolean;
 }
 
 const initialLoc = loadLocation();
@@ -152,8 +164,14 @@ const state: AppState = {
   installPrompt: null,
   tourModalOpen: false,
   tourSlideIndex: 0,
-  cardOrder: loadCardOrder()
+  cardOrder: loadCardOrder(),
+  nativeFullscreen: false
 };
+
+function isAppFullscreen(): boolean {
+  const doc = document as WebkitFullscreenDocument;
+  return Boolean(state.nativeFullscreen || doc.fullscreenElement || doc.webkitFullscreenElement);
+}
 
 // ── PWA Install Prompt Listener ─────────────────────────────────────────────
 
@@ -604,8 +622,8 @@ function render() {
           </button>
 
           <!-- Fullscreen Toggle Button -->
-          <button id="btnToggleFullscreen" title="${document.fullscreenElement ? t('app.fullscreen_exit') : t('app.fullscreen_enter')}" aria-label="${document.fullscreenElement ? t('app.fullscreen_exit') : t('app.fullscreen_enter')}" class="p-2 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:text-white transition cursor-pointer shrink-0">
-            ${document.fullscreenElement ? `
+          <button id="btnToggleFullscreen" title="${isAppFullscreen() ? t('app.fullscreen_exit') : t('app.fullscreen_enter')}" aria-label="${isAppFullscreen() ? t('app.fullscreen_exit') : t('app.fullscreen_enter')}" class="p-2 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:text-white transition cursor-pointer shrink-0">
+            ${isAppFullscreen() ? `
               <!-- Exit Fullscreen (Compress) -->
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0h5m-5 0v5m6 6l5 5m0 0h-5m5 0v-5m-6-6l5-5m0 0h-5m5 0v5m-6 6l-5 5m0 0h5m-5 0v-5"/></svg>
             ` : `
@@ -1576,6 +1594,13 @@ function attachEventHandlers() {
   // Toggle Fullscreen
   document.getElementById('btnToggleFullscreen')?.addEventListener('click', async () => {
     try {
+      if (window.SkyOracleAndroid && typeof window.SkyOracleAndroid.setFullscreen === 'function') {
+        state.nativeFullscreen = !state.nativeFullscreen;
+        window.SkyOracleAndroid.setFullscreen(state.nativeFullscreen);
+        render();
+        return;
+      }
+
       const doc = document as WebkitFullscreenDocument;
       const docEl = document.documentElement as WebkitFullscreenElement;
       if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
