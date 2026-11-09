@@ -76,7 +76,7 @@ import { renderDraggableDashboardCards, attachCardDragHandlers } from './ui/dash
 import { renderSearchResultsList, renderSearchModal } from './ui/search-modal.ts';
 import { getTourSlides, renderTourModal } from './ui/tour-modal.ts';
 
-export const APP_VERSION = '1.0.21';
+export const APP_VERSION = '1.0.22';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;

@@ -21,7 +21,7 @@
     "alias": "android"
   },
   "appVersionCode": 10,
-  "appVersion": "1.0.21",
+  "appVersion": "1.0.22",
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://aacero.github.io/sky-tonight/manifest.json",
   "fallbackType": "webview",

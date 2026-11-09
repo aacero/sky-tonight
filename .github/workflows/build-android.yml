@@ -74,13 +74,16 @@ jobs:
           SHA256_FP=$(keytool -list -v -keystore ./android.keystore -alias android -storepass "$KEY_PASS" | grep "SHA256:" | awk '{print $2}')
           echo "SHA256_FINGERPRINT=$SHA256_FP" >> $GITHUB_ENV
 
+          APP_VER=$(node -p "require('./android/twa-manifest.json').appVersion")
+          APP_CODE=$(node -p "require('./android/twa-manifest.json').appVersionCode")
+
           cat << EOF > BUILD_INFO.txt
           ==================================================
           SkyOracle — Google Play Android Bundle Build
           ==================================================
           Package ID: com.lapsedacademics.skytonight
-          Version Name: 1.0.18
-          Version Code: 5
+          Version Name: $APP_VER
+          Version Code: $APP_CODE
           Web App URL: https://aacero.github.io/sky-tonight/
           Signing Key Alias: android
           Upload Keystore SHA-256 Fingerprint:
