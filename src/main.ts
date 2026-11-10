@@ -568,8 +568,6 @@ function render() {
             SkyOracle
             <a
               href="./releases.html"
-              target="_blank"
-              rel="noopener noreferrer"
               title="View release notes & changelog"
               class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#58a6ff]/15 hover:bg-[#58a6ff]/25 text-[#58a6ff] hover:text-white border border-[#58a6ff]/30 hover:border-[#58a6ff]/60 font-mono transition cursor-pointer inline-flex items-center gap-1"
             >
@@ -887,7 +885,7 @@ function render() {
         <span>·</span>
         <span>PWA Ready</span>
         <span>·</span>
-        <a href="./privacy.html" target="_blank" class="hover:text-[#58a6ff] transition underline">Privacy Policy</a>
+        <a href="./privacy.html" class="hover:text-[#58a6ff] transition underline">Privacy Policy</a>
       </div>
     </footer>
 
